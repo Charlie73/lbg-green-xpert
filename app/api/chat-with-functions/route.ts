@@ -30,6 +30,24 @@ const functions: ChatCompletionCreateParams.Function[] = [
     },
   },
   {
+    name: 'get_energy_rating',
+    description: 'Get the energy rating chart.',
+    parameters: {
+      type: 'object',
+      properties: {
+        current: {
+          type: 'string',
+          description: 'The current energy rating',
+        },        
+        potential: {
+          type: 'string',
+          description: 'The potential energy rating',
+        },
+      },
+      required: ['current', 'potential'],
+    },
+  },
+  {
     name: 'eval_code_in_browser',
     description: 'Execute javascript code in the browser with eval().',
     parameters: {
@@ -51,7 +69,7 @@ export async function POST(req: Request) {
   const { messages } = await req.json();
 
   const response = await openai.chat.completions.create({
-    model: 'gpt-3.5-turbo-0613',
+    model: 'gpt-4-1106-preview',
     stream: true,
     messages,
     functions,
@@ -78,9 +96,27 @@ export async function POST(req: Request) {
         return openai.chat.completions.create({
           messages: [...messages, ...newMessages],
           stream: true,
-          model: 'gpt-3.5-turbo-0613',
+          model: 'gpt-4-1106-preview',
         });
       }
+      if (name === 'get_energy_rating') {
+        // Call a weather API here
+        const energyData = {
+          current: args.current === 'D' ? 'Good' : 'Better than good',
+          potential: args.potential === 'B' ? 'Very Good' : 'Excelent',
+        };
+
+        data.append({
+          text: 'Some custom data',
+        });
+
+        const newMessages = createFunctionCallMessages(energyData);
+        return openai.chat.completions.create({
+          messages: [...messages, ...newMessages],
+          stream: true,
+          model: 'gpt-4-1106-preview',
+        });
+      }  
     },
     onCompletion(completion) {
       console.log('completion', completion);
